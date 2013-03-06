@@ -121,7 +121,7 @@ module People
                    'Attorney at Law.',
                    'Attorney-at-Law.',
 
-                   'Ph\.?d\.?',
+                   'Ph\.? ?d\.?',
                    'C\.?P\.?A\.?',
 
                    'XI{1,3}',            # 11th, 12th, 13th
@@ -157,10 +157,15 @@ module People
       name = clean( name )
 
       # strip trailing suffices
+      temp_suffix = []
       @suffixes.each do |sfx|
         sfx_p = Regexp.new( "(.+), (#{sfx})$", true )
-        ##puts sfx_p
-        name.gsub!( sfx_p, "\\1 \\2" )
+        if name.match(sfx_p)
+        #puts sfx_p
+          temp_suffix.unshift($2)
+          name.gsub!( sfx_p, "\\1" )
+          redo
+        end
       end
 
       name.gsub!( /Mr\.? \& Mrs\.?/i, "Mr. and Mrs." )
@@ -171,6 +176,7 @@ module People
 
 
       name.gsub!( /,/, "" )
+      name << " " + temp_suffix.join(' ')
       name.strip!
 
       if @opts[:couples]
@@ -219,6 +225,7 @@ module People
 
 
       else
+        out[:suffix] = ''
 
         out[:title] = get_title( name );
         out[:suffix] = get_suffix( name );
@@ -316,19 +323,19 @@ module People
       return ""
     end
 
+    # get_suffix destroys the name parameter
     def get_suffix( name )
+      suffixes = []
 
       @suffixes.each do |sfx|
         sfx_p = Regexp.new( "(.+) (#{sfx})$", true )
         if name.match( sfx_p )
           name.replace $1.strip
-          suffix = $2
-          return $2
+          suffixes.unshift $2
+          redo
         end
-
       end
-
-      return ""
+      suffixes.join ", "
     end
 
     def get_name_parts( name, no_last_name = false )
