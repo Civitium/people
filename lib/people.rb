@@ -109,9 +109,7 @@ module People
                    'Sn?r\.?,? Esq\.?',
                    'I{1,3},? Esq\.?',
 
-                   'Jn?r\.?,? M\.?D\.?',
-                   'Sn?r\.?,? M\.?D\.?',
-                   'I{1,3},? M\.?D\.?',
+                   'I{1,3},?',
 
                    'Sn?r\.?',         # Senior
                    'Jn?r\.?',         # Junior
@@ -132,10 +130,23 @@ module People
                    'IX',                 # 9th
                    'I{1,3}\.?',             # 1st, 2nd, 3rd
                    'M\.?D\.?',           # M.D.
-                   'D.?M\.?D\.?'         # M.D.
+                   'D\.?M\.?D\.?',         # M.D.
+                   'D\.?D\.?S\.?',
+                   'D\.?V\.?M\.?',
+                   'D\.?P\.?M\.?',
+                   'P\.? ?A\.?',
+                   'PC',
+                   'APC',
+                   'MPH',
+                   'FACS',
+                   'FACP',
+                   'CHB',
+                   'MS', 'MB', 'BS', 'SC', 'DSC',
+                   'D\.?O\.?',
+                   'V\.?M\.?D\.?'
                   ];
 
-      @last_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc}]+)))";
+      @last_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc}-]+)))";
       @mult_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc} ]+)))";
 
       @seen = 0
@@ -158,16 +169,21 @@ module People
 
       # strip trailing suffices
       temp_suffix = []
-      @suffixes.each do |sfx|
-        sfx_p = Regexp.new( "(.+), (#{sfx})$", true )
-        if name.match(sfx_p)
-        #puts sfx_p
-          temp_suffix.unshift($2)
-          name.gsub!( sfx_p, "\\1" )
-          redo
-        end
-      end
 
+      begin
+        name_changed = false
+#        puts "#{name_start} should equal #{name}"
+        @suffixes.each do |sfx|
+          sfx_p = Regexp.new( "(.+?),? (#{sfx})$", true )
+          if name.match(sfx_p)
+            name.replace $1.strip
+            temp_suffix.unshift $2
+            name_changed = true
+            break
+          end
+        end
+#        puts "#{name_start} may not equal #{name}"
+      end while name_changed
       name.gsub!( /Mr\.? \& Mrs\.?/i, "Mr. and Mrs." )
 
       # Flip last and first if contain comma
@@ -327,14 +343,18 @@ module People
     def get_suffix( name )
       suffixes = []
 
-      @suffixes.each do |sfx|
-        sfx_p = Regexp.new( "(.+) (#{sfx})$", true )
-        if name.match( sfx_p )
-          name.replace $1.strip
-          suffixes.unshift $2
-          redo
+      begin
+        name_changed = false
+        @suffixes.each do |sfx|
+          sfx_p = Regexp.new( "(.+) (#{sfx})$", true )
+          if name.match( sfx_p )
+            name.replace $1.strip
+            suffixes.unshift $2
+            name_changed = true
+            break
+          end
         end
-      end
+      end while name_changed
       suffixes.join ", "
     end
 
@@ -435,12 +455,19 @@ module People
         parse_type = 10;
 
         # MATTHEW E. SHEIE ERICSON
-      elsif name.match( /^([#{@nc}]+) ([A-Za-z])\.? ($multNamePat)$/i )
+      elsif name.match( /^([#{@nc}]+) ([A-Za-z])\.? (#{mult_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
         parsed = true
         parse_type = 11;
+
+      elsif name.match( /^([#{@nc}]+) ([#{@nc} .]+?) (#{last_name_p})$/i )
+        first  = $1;
+        middle = $2;
+        last   = $3;
+        parsed = true
+        parse_type = 12;
       end
 
       last.gsub!( /;/, "" )
