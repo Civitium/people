@@ -34,8 +34,11 @@ module People
                   'Sir ',
                   'Lord ',
                   'Lady ',
+                  'Count(ess)? ',
+                  'Baron(ess)? ',
                   'Madam(e)? ',
                   'Dame ',
+                  'Herr ',
 
                   # Medical
                   'Dr\.? ',
