@@ -26,7 +26,7 @@ module People
                   'Ms\.? ',
                   'Miss\.? ',
                   'Mme\.? ',
-                  'Mr\.? ',
+                  '[FHM]r\.? ',
                   'Messrs ',
                   'Mister ',
                   'Mast(\.|er)? ',
@@ -39,6 +39,14 @@ module People
                   'Madam(e)? ',
                   'Dame ',
                   'Herr ',
+                  'Frau ',
+                  'Dhr\.? ',
+                  'Sr(a|ta)?\.? ',
+                  'Senhor ',
+                  'Senhora ',
+                  'Senhorita ',
+                  'Sig.(a|ra)? ',
+                  'Signor(a|e) ',
 
                   # Medical
                   'Dr\.? ',
