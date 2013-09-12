@@ -46,6 +46,20 @@ class PeopleTest < Test::Unit::TestCase
       assert_equal "Destiny", res[:last], "Last name not equal"
     end
 
+    should "parse multi 'MATTHEW E. SHEIE ERICSON'" do
+      res = parser.parse("MATTHEW E. SHEIE ERICSON")
+      assert res[:parsed], "parse failed"
+      assert_equal "Matthew", res[:first]
+      assert_equal "Sheie Ericson", res[:last], "Last name not equal"
+    end
+
+    should "parse Unicode 'Anders Ølsen'" do
+      res = parser.parse("Anders Ølsen")
+      assert res[:parsed], "parse failed"
+      assert_equal "Anders", res[:first]
+      assert_equal "Ølsen", res[:last], "Last name not equal"
+    end
+
   end
 
   def parser(opts = {})
