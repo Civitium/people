@@ -443,6 +443,15 @@ module People
         last   = $3;
         parsed = true
         parse_type = 11;
+
+        # M.E.N. ERICSON
+      elsif name.match( /^(([#{u1c}]\.)+) (#{last_name_p})$/i )
+        first  = $1;
+        middle = ''
+        last   = $3;
+        parsed = true
+        parse_type = 12;
+
       end
 
       last.gsub!( /;/, "" )

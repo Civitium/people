@@ -60,6 +60,25 @@ class PeopleTest < Test::Unit::TestCase
       assert_equal "Ølsen", res[:last], "Last name not equal"
     end
 
+    should "parse multiple single initials 'M.E.N. ERICSON'" do
+      initials_src.each do |source|
+        name, compare = source
+        res = parser.parse(name)
+        assert res[:parsed], "Initials: #{name}, did not parse"
+        assert_equal compare, res[:first], "#{compare} does not equal #{res[:first]}"
+        assert_equal "Last", res[:last], "#{res[:last]} does not equal 'Last'"
+      end
+    end
+  end
+
+  def initials_src
+    [
+      ["F. Last", "F"],
+      ["F.I. Last", "F"],
+      ["F.I.R. Last", "F.I.R."],
+      ["F.I.R.S. Last", "F.I.R.S."],
+      ["F.I.R.S.T. Last", "F.I.R.S.T."]
+    ]
   end
 
   def parser(opts = {})
