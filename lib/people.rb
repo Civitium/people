@@ -8,7 +8,7 @@ module People
     # Creates a name parsing object
     def initialize( opts={} )
 
-      @name_chars = "A-Za-z0-9\\-\\'"
+      @name_chars = "\\p{Alnum}\\-\\'"
       @nc = @name_chars
 
       @opts = {
@@ -26,7 +26,7 @@ module People
                   'Ms\.? ',
                   'Miss\.? ',
                   'Mme\.? ',
-                  'Mr\.? ',
+                  '[FHM]r\.? ',
                   'Messrs ',
                   'Mister ',
                   'Mast(\.|er)? ',
@@ -34,8 +34,19 @@ module People
                   'Sir ',
                   'Lord ',
                   'Lady ',
+                  'Count(ess)? ',
+                  'Baron(ess)? ',
                   'Madam(e)? ',
                   'Dame ',
+                  'Herr ',
+                  'Frau ',
+                  'Dhr\.? ',
+                  'Sr(a|ta)?\.? ',
+                  'Senhor ',
+                  'Senhora ',
+                  'Senhorita ',
+                  'Sig.(a|ra)? ',
+                  'Signor(a|e) ',
 
                   # Medical
                   'Dr\.? ',
@@ -135,8 +146,8 @@ module People
                    'D.?M\.?D\.?'         # M.D.
                   ];
 
-      @last_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc}]+)))";
-      @mult_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc} ]+)))";
+      @last_name_p = "((;.+)|(((Mc|Mac|De[lns]?|Dell[ae]|De L(a|as|os)|Da|Di|Du|La|Le|Lo|St\.|Von|Van|Von Der|Van De[nr]?) )?([#{@nc}]+)))"
+      @mult_name_p = "((;.+)|(((Mc|Mac|De[lns]?|Dell[ae]|De L(a|as|os)|Da|Di|Du|La|Le|Lo|St\.|Von|Van|Von Der|Van De[nr]?) )?([#{@nc} ]+)))"
 
       @seen = 0
       @parsed = 0;
@@ -255,10 +266,6 @@ module People
 
       out[:clean] = name
 
-
-
-
-
       return {
         :title       => "",
         :first       => "",
@@ -288,7 +295,7 @@ module People
     def clean( s )
 
       # remove illegal characters
-      s.gsub!( /[^A-Za-z0-9\-\'\.&\/ \,]/, "" )
+      s.gsub!( /[^\p{Alnum}\-\'\.&\/ \,]/, "" )
       # remove repeating spaces
       s.gsub!( /  +/, " " )
       s.gsub!( /\s+/, " " )
@@ -344,8 +351,10 @@ module People
 
       parsed = false
 
+      u1c = "\\p{Alpha}"
+
       # M ERICSON
-      if name.match( /^([A-Za-z])\.? (#{last_name_p})$/i )
+      if name.match( /^([#{u1c}])\.? (#{last_name_p})$/i )
         first  = $1;
         middle = '';
         last   = $2;
@@ -353,7 +362,7 @@ module People
         parse_type = 1;
 
         # M E ERICSON
-      elsif name.match( /^([A-Za-z])\.? ([A-Za-z])\.? (#{last_name_p})$/i )
+      elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
@@ -361,7 +370,7 @@ module People
         parse_type = 2;
 
         # M.E. ERICSON
-      elsif name.match( /^([A-Za-z])\.([A-Za-z])\. (#{last_name_p})$/i )
+      elsif name.match( /^([#{u1c}])\.([#{u1c}])\. (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
@@ -369,7 +378,7 @@ module People
         parse_type = 3;
 
         # M E E ERICSON
-      elsif name.match( /^([A-Za-z])\.? ([A-Za-z])\.? ([A-Za-z])\.? (#{last_name_p})$/i )
+      elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
         first  = $1;
         middle = $2 + ' ' + $3;
         last   = $4;
@@ -377,7 +386,7 @@ module People
         parse_type = 4;
 
         # M EDWARD ERICSON
-      elsif name.match( /^([A-Za-z])\.? ([#{@nc}]+) (#{last_name_p})$/i )
+      elsif name.match( /^([#{u1c}])\.? ([#{@nc}]+) (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
@@ -385,7 +394,7 @@ module People
         parse_type = 5;
 
         # MATTHEW E ERICSON
-      elsif name.match( /^([#{@nc}]+) ([A-Za-z])\.? (#{last_name_p})$/i )
+      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
@@ -393,7 +402,7 @@ module People
         parse_type = 6;
 
         # MATTHEW E E ERICSON
-      elsif name.match( /^([#{@nc}]+) ([A-Za-z])\.? ([A-Za-z])\.? (#{last_name_p})$/i )
+      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
         first  = $1;
         middle = $2 + ' ' + $3;
         last   = $4;
@@ -401,7 +410,7 @@ module People
         parse_type = 7;
 
         # MATTHEW E.E. ERICSON
-      elsif name.match( /^([#{@nc}]+) ([A-Za-z]\.[A-Za-z]\.) (#{last_name_p})$/i )
+      elsif name.match( /^([#{@nc}]+) ([#{u1c}]\.[#{u1c}]\.) (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
@@ -425,12 +434,21 @@ module People
         parse_type = 10;
 
         # MATTHEW E. SHEIE ERICSON
-      elsif name.match( /^([#{@nc}]+) ([A-Za-z])\.? ($multNamePat)$/i )
+      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{mult_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
         parsed = true
         parse_type = 11;
+
+        # M.E.N. ERICSON
+      elsif name.match( /^(([#{u1c}]\.)+) (#{last_name_p})$/i )
+        first  = $1;
+        middle = ''
+        last   = $3;
+        parsed = true
+        parse_type = 12;
+
       end
 
       last.gsub!( /;/, "" )
@@ -453,9 +471,9 @@ module People
       # Exclude names with 1-2 letters after prefix like Mack, Macky, Mace
       # Exclude names ending in a,c,i,o,z or j, typically Polish or Italian
 
-      if fixed.match( /\bMac[a-z]{2,}[^a|c|i|o|z|j]\b/i  )
+      if fixed.match( /\bMac[\p{Lower}]{2,}[^a|c|i|o|z|j]\b/i  )
 
-        fixed.gsub!( /\b(Mac)([a-z]+)/i ) do |m|
+        fixed.gsub!( /\b(Mac)([\p{Lower}]+)/i ) do |m|
           $1 + $2.capitalize
         end
 
@@ -476,7 +494,7 @@ module People
         fixed.gsub!( /MacIas/i,     'Macias' )
 
       elsif fixed.match( /\bMc/i )
-        fixed.gsub!( /\b(Mc)([a-z]+)/i ) do |m|
+        fixed.gsub!( /\b(Mc)([\p{Lower}]+)/i ) do |m|
           $1 + $2.capitalize
         end
 
