@@ -41,6 +41,10 @@ Try it out online at http://people.ericson.net
 
 Send suggestions to mericson at ericson dot net.
 
+== Acknowledgements
+@perryjg
+@musicglue
+@stringsn88keys
 
 == Copyright
 
