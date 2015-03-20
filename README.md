@@ -1,12 +1,22 @@
-= people
+# people
 
 Parses names into parts. Loosely based on the Lingua-EN-NameParser Perl module.
 
-= How to install
+## How to install
+
+Add to your application's Gemfile:
+
+  gem 'people'
+
+And then execute:
+
+  $ bundle
+
+Or install it:
 
   sudo gem install people
 
-= How to use
+## How to use
 
   require 'people'
 
@@ -37,15 +47,15 @@ If you have names like "John and Jane Doe", pass :couples => true
   puts name[:first2]
   puts name[:last]
 
-Try it out online at http://people.ericson.net 
+Try it out online at http://people.ericson.net
 
 Send suggestions to mericson at ericson dot net.
 
-== Acknowledgements
+## Acknowledgements
 @perryjg
 @musicglue
 @stringsn88keys
 
-== Copyright
+## Copyright
 
 Copyright (c) 2009 Matthew Ericson. See LICENSE for details.

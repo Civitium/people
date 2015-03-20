@@ -1,3 +1,11 @@
+# 0.4.0 2015-03-18
+* added pull requests to original with contributions from @perryjg, @musicglue, @stringsn88keys
+* updated gemspec, rakefile, readme
+* use bundler
+* added Gemfile, version file
+* started re-org
+* updated to rspec 3
+
 # people 0.3.1, 2013-03-07
 * Added a lengthy list of medical suffixes.
 * Added a name format to capture middle names.
