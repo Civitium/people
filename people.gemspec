@@ -15,12 +15,11 @@ Gem::Specification.new do |s|
 
   s.require_paths = ["lib"]
   s.rubygems_version = "~> 1.8"
+  s.required_ruby_version = '>= 2.1'
   s.summary = "Matts Name Parser"
   s.description = ""
   s.homepage = "http://github.com/mericson/people"
   s.license       = "MIT"
-
-
 
   s.files         = s.files.grep(%r{^lib/}) #{}`git ls-files -z`.split("\x0")
   #s.executables   = s.files.grep(%r{^bin/}) { |f| File.basename(f) }

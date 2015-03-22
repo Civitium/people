@@ -1,3 +1,12 @@
+# 0.4.1 2015-03-21
+* moved title and suffixes to constants
+* made title and suffixes regex's
+* added test for multiple suffixes
+* optimized some title/suffix searching (maybe?)
+* removed parse_type variable/key as it seemed to be only used for tests
+* added note about ruby version (> 2.1.0) or get other gems
+*
+
 # 0.4.0 2015-03-18
 * added pull requests to original with contributions from @perryjg, @musicglue, @stringsn88keys
 * updated gemspec, rakefile, readme
