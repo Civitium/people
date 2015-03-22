@@ -2,6 +2,111 @@ module People
   # Class to parse names into their components like first, middle, last, etc.
   class NameParser
 
+    TITLES = %r!
+      ^(
+        (?:Lt|Leut|Lieut)\.?
+        | Air\sCommander
+        | Air\sCommodore
+        | Air\sMarshall
+        | Ald(?:\.|erman)?
+        | Baron(?:ess)?
+        | Bishop
+        | Brig(?:adier)?
+        | Brother
+        | Capt(?:\.|ain)?
+        | Cdr\.?
+        | Chaplain
+        | Colonel
+        | Commander
+        | Commodore
+        | Count(?:ess)?
+        | Dame
+        | Det\.?
+        |  Dhr\.?
+        | Doctor
+        | Dr\.?
+        | Father
+        | Field\sMarshall
+        | Flt?\.?(?:\s(?:Lt|Off)\.?)                       # Fl Lt, Flt Lt, Fl Off, Flt Off
+        | Flight(?:\s(?:Lieutenant|Officer))               # Flight Lieutenant, Flight Officer
+        | Frau
+        | Fr\.?
+        | Gen(?:\.|eral)?
+        | Herr
+        | Hr\.?
+        | Insp\.?
+        | Judge
+        | Justice
+        | Lady
+        | Lieutenant(?:\s(?:Commander|Colonel|General))?  # Lieutenant, Lieutenant Commander, Lieutenant Colonel, Lieutenant General
+        | Lord
+        | Lt\.?(?:\s(?:Cdr|Col|Gen)\.?)?                  # Lt, Lt Col, Lt Cdr, Lt Gen
+        | M/s\.?
+        | Madam(?:e)?
+        | Maj\.?(?:\sGen\.?)?                             # Maj, Maj Gen
+        | Major(?:\sGeneral)?                             # Major, Major General
+        | Mast(?:\.|er)?
+        | Matron
+        | Messrs
+        | Miss\.?
+        | Mister
+        | Mme\.?
+        | Most\sRever[e|a]nd
+        | Mother(?:\sSuperior)?                           # Mother, Mother Superior
+        | Mr\.?\sand\sMrs\.?
+        | Mrs?\.?
+        | Ms?gr\.?
+        | Ms\.?
+        | Mt\.?\sRevd\.?
+        | Mx\.?
+        | Pastor
+        | Private
+        | Prof(?:\.|essor)?                               # Proffessor, Prof
+        | Pte\.
+        | Rabbi
+        | Revd?\.?
+        | Rever[e|a]nd
+        | Sargent
+        | Senhor
+        | Senhora
+        | Senhorita
+        | Sgt\.?
+        | Sig.(?:a|ra)?
+        | Signor(?:a|e)
+        | Sir
+        | Sister
+        | Sr(?:a|ta)?\.?
+        | V\.?\ Revd?\.?
+        | Very\ Rever[e|a]nd
+      )
+    !xo;
+    
+    SUFFIXES  = %r!
+      (
+         APC
+        | Attorney[\s\-]at[\s\-]Law\.?       # Attorney at Law, Attorney-at-Law
+        | BS
+        | C\.?P\.?A\.?
+        | CHB
+        | D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
+        | DSC
+        | Esq(?>\.|uire\.?)?                 # Esq, Esquire
+        | FAC(?>P|S)                         # FACP, FACS
+        | \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
+        | I{1,3},?\sEsq\.?
+        | Jn?r\.?
+        | Jn?r\.?,?\sEsq\.?
+        | M\.?[BDS]\.?                       # MB, MD, MS
+        | MPH
+        | P\.?\s?A\.?
+        | PC
+        | Ph\.?\s?d\.?
+        | SC
+        | Sn?r\.?(?>,?\sEsq)?\.?             # Snr, Sr, Snr Esq, Sr Esq
+        | V\.?M\.?D\.?
+      )
+    !xo;
+
     attr_reader :seen, :parsed
 
     # Creates a name parsing object
@@ -19,146 +124,9 @@ module People
 
       ## constants
 
-      @titles = [ 'Mr\.? and Mrs\.? ',
-                  'Mrs\.? ',
-                  'M/s\.? ',
-                  'Ms\.? ',
-                  'Miss\.? ',
-                  'Mme\.? ',
-                  '[FHM]r\.? ',
-                  'Messrs ',
-                  'Mister ',
-                  'Mast(\.|er)? ',
-                  'Ms?gr\.? ',
-                  'Sir ',
-                  'Lord ',
-                  'Lady ',
-                  'Count(ess)? ',
-                  'Baron(ess)? ',
-                  'Madam(e)? ',
-                  'Dame ',
-                  'Herr ',
-                  'Frau ',
-                  'Dhr\.? ',
-                  'Sr(a|ta)?\.? ',
-                  'Senhor ',
-                  'Senhora ',
-                  'Senhorita ',
-                  'Sig.(a|ra)? ',
-                  'Signor(a|e) ',
-
-                  # Medical
-                  'Dr\.? ',
-                  'Doctor ',
-                  'Sister ',
-                  'Matron ',
-
-                  # Legal
-                  'Judge ',
-                  'Justice ',
-
-                  # Police
-                  'Det\.? ',
-                  'Insp\.? ',
-
-                  # Military
-                  'Brig(adier)? ',
-                  'Capt(\.|ain)? ',
-                  'Commander ',
-                  'Commodore ',
-                  'Cdr\.? ',
-                  'Colonel ',
-                  'Gen(\.|eral)? ',
-                  'Field Marshall ',
-                  'Fl\.? Off\.? ',
-                  'Flight Officer ',
-                  'Flt Lt ',
-                  'Flight Lieutenant ',
-                  'Pte\. ',
-                  'Private ',
-                  'Sgt\.? ',
-                  'Sargent ',
-                  'Air Commander ',
-                  'Air Commodore ',
-                  'Air Marshall ',
-                  'Lieutenant Colonel ',
-                  'Lt\.? Col\.? ',
-                  'Lt\.? Gen\.? ',
-                  'Lt\.? Cdr\.? ',
-                  'Lieutenant ',
-                  '(Lt|Leut|Lieut)\.? ',
-                  'Major General ',
-                  'Maj\.? Gen\.?',
-                  'Major ',
-                  'Maj\.? ',
-
-                  # Religious
-                  'Rabbi ',
-                  'Brother ',
-                  'Father ',
-                  'Chaplain ',
-                  'Pastor ',
-                  'Bishop ',
-                  'Mother Superior ',
-                  'Mother ',
-                  'Most Rever[e|a]nd ',
-                  'Very Rever[e|a]nd ',
-                  'Mt\.? Revd\.? ',
-                  'V\.? Revd?\.? ',
-                  'Rever[e|a]nd ',
-                  'Revd?\.? ',
-
-                  # Other
-                  'Prof(\.|essor)? ',
-                  'Ald(\.|erman)? '
-                ];
-
-
-      @suffixes = [
-                   'Jn?r\.?,? Esq\.?',
-                   'Sn?r\.?,? Esq\.?',
-                   'I{1,3},? Esq\.?',
-
-                   'I{1,3},?',
-
-                   'Sn?r\.?',         # Senior
-                   'Jn?r\.?',         # Junior
-
-                   'Esq(\.|uire)?',
-                   'Esquire.',
-                   'Attorney at Law.',
-                   'Attorney-at-Law.',
-
-                   'Ph\.? ?d\.?',
-                   'C\.?P\.?A\.?',
-
-                   'XI{1,3}',            # 11th, 12th, 13th
-                   'X',                  # 10th
-                   'IV',                 # 4th
-                   'VI{1,3}',            # 6th, 7th, 8th
-                   'V',                  # 5th
-                   'IX',                 # 9th
-                   'I{1,3}\.?',             # 1st, 2nd, 3rd
-                   'M\.?D\.?',           # M.D.
-                   'D\.?M\.?D\.?',         # M.D.
-                   'D\.?D\.?S\.?',
-                   'D\.?V\.?M\.?',
-                   'D\.?P\.?M\.?',
-                   'P\.? ?A\.?',
-                   'PC',
-                   'APC',
-                   'MPH',
-                   'FACS',
-                   'FACP',
-                   'CHB',
-                   'MS', 'MB', 'BS', 'SC', 'DSC',
-                   'D\.?O\.?',
-                   'V\.?M\.?D\.?'
-                  ];
-
       @last_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc}-]+)))";
       @mult_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc} ]+)))";
-
+      
       @seen = 0
       @parsed = 0;
 
@@ -179,21 +147,6 @@ module People
 
       # strip trailing suffices
       temp_suffix = []
-
-      begin
-        name_changed = false
-#        puts "#{name_start} should equal #{name}"
-        @suffixes.each do |sfx|
-          sfx_p = Regexp.new( "(.+?),? (#{sfx})$", true )
-          if name.match(sfx_p)
-            name.replace $1.strip
-            temp_suffix.unshift $2
-            name_changed = true
-            break
-          end
-        end
-#        puts "#{name_start} may not equal #{name}"
-      end while name_changed
       name.gsub!( /Mr\.? \& Mrs\.?/i, "Mr. and Mrs." )
 
       # Flip last and first if contain comma
@@ -202,7 +155,7 @@ module People
 
 
       name.gsub!( /,/, "" )
-      name << " " + temp_suffix.join(' ')
+#      name << " " + temp_suffix.join(' ')
       name.strip!
 
       if @opts[:couples]
@@ -225,10 +178,9 @@ module People
         parts = get_name_parts( b )
 
         out[:parsed2] = parts[0]
-        out[:parse_type2] = parts[1]
-        out[:first2] = parts[2]
-        out[:middle2] = parts[3]
-        out[:last] = parts[4]
+        out[:first2] = parts[1]
+        out[:middle2] = parts[2]
+        out[:last] = parts[3]
 
         out[:title] = get_title( a );
         out[:suffix] = get_suffix( a );
@@ -239,9 +191,8 @@ module People
         parts = get_name_parts( a, true )
 
         out[:parsed] = parts[0]
-        out[:parse_type] = parts[1]
-        out[:first] = parts[2]
-        out[:middle] = parts[3]
+        out[:first] = parts[1]
+        out[:middle] = parts[2]
 
         if out[:parsed] && out[:parsed2]
           out[:multiple] = true
@@ -255,14 +206,12 @@ module People
 
         out[:title] = get_title( name );
         out[:suffix] = get_suffix( name );
-
         parts = get_name_parts( name )
 
         out[:parsed] = parts[0]
-        out[:parse_type] = parts[1]
-        out[:first] = parts[2]
-        out[:middle] = parts[3]
-        out[:last] = parts[4]
+        out[:first] = parts[1]
+        out[:middle] = parts[2]
+        out[:last] = parts[3]
 
       end
 
@@ -303,10 +252,8 @@ module People
         :clean       => "",
 
         :parsed      => false,
-        :parse_type  => "",
 
         :parsed2     => false,
-        :parse_type2 => "",
 
         :multiple    => false
       }.merge( out )
@@ -315,7 +262,7 @@ module People
 
 
     def clean( s )
-
+      s.scrub!
       # remove illegal characters
       s.gsub!( /[^\p{Alnum}\-\'\.&\/ \,]/, "" )
       # remove repeating spaces
@@ -323,20 +270,14 @@ module People
       s.gsub!( /\s+/, " " )
       s.strip!
       s
-
     end
 
     def get_title( name )
 
-      @titles.each do |title|
-        title_p = Regexp.new( "^(#{title})(.+)", true )
-        if m = name.match( title_p )
-
-          title = m[1]
-          name.replace( m[-1].strip )
-          return title
-        end
-
+      if m = TITLES.match(name)
+        title = m[1].strip
+        name.sub!(title, "").strip!
+        return title
       end
 
       return ""
@@ -345,20 +286,12 @@ module People
     # get_suffix destroys the name parameter
     def get_suffix( name )
       suffixes = []
-
-      begin
-        name_changed = false
-        @suffixes.each do |sfx|
-          sfx_p = Regexp.new( "(.+) (#{sfx})$", true )
-          if name.match( sfx_p )
-            name.replace $1.strip
-            suffixes.unshift $2
-            name_changed = true
-            break
-          end
-        end
-      end while name_changed
-      suffixes.join ", "
+      suffixes = name.scan(SUFFIXES).flatten
+      suffixes.each do |s|
+        name.sub!(/\b#{s}/, "")
+        name.strip!
+      end
+      suffixes.join " "
     end
 
     def get_name_parts( name, no_last_name = false )
@@ -385,7 +318,6 @@ module People
         middle = '';
         last   = $2;
         parsed = true
-        parse_type = 1;
 
         # M E ERICSON
       elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
@@ -393,7 +325,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 2;
 
         # M.E. ERICSON
       elsif name.match( /^([#{u1c}])\.([#{u1c}])\. (#{last_name_p})$/i )
@@ -401,7 +332,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 3;
 
         # M E E ERICSON
       elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
@@ -409,7 +339,6 @@ module People
         middle = $2 + ' ' + $3;
         last   = $4;
         parsed = true
-        parse_type = 4;
 
         # M EDWARD ERICSON
       elsif name.match( /^([#{u1c}])\.? ([#{@nc}]+) (#{last_name_p})$/i )
@@ -417,7 +346,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 5;
 
         # MATTHEW E ERICSON
       elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{last_name_p})$/i )
@@ -425,7 +353,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 6;
 
         # MATTHEW E E ERICSON
       elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
@@ -433,7 +360,6 @@ module People
         middle = $2 + ' ' + $3;
         last   = $4;
         parsed = true
-        parse_type = 7;
 
         # MATTHEW E.E. ERICSON
       elsif name.match( /^([#{@nc}]+) ([#{u1c}]\.[#{u1c}]\.) (#{last_name_p})$/i )
@@ -441,7 +367,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 8;
 
         # MATTHEW ERICSON
       elsif name.match( /^([#{@nc}]+) (#{last_name_p})$/i )
@@ -449,7 +374,6 @@ module People
         middle = '';
         last   = $2;
         parsed = true
-        parse_type = 9;
 
         # MATTHEW EDWARD ERICSON
       elsif name.match( /^([#{@nc}]+) ([#{@nc}]+) (#{last_name_p})$/i )
@@ -457,7 +381,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 10;
 
         # MATTHEW E. SHEIE ERICSON
       elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{mult_name_p})$/i )
@@ -465,7 +388,6 @@ module People
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 11;
 
         # M.E.N. ERICSON
       elsif name.match( /^(([#{u1c}]\.)+) (#{last_name_p})$/i )
@@ -473,19 +395,17 @@ module People
         middle = ''
         last   = $3;
         parsed = true
-        parse_type = 12;
 
       elsif name.match( /^([#{@nc}]+) ([#{@nc} .]+?) (#{last_name_p})$/i )
         first  = $1;
         middle = $2;
         last   = $3;
         parsed = true
-        parse_type = 12;
       end
 
       last.gsub!( /;/, "" )
 
-      return [ parsed, parse_type, first, middle, last ];
+      return [ parsed, first, middle, last ];
 
     end
 

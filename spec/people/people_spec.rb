@@ -9,7 +9,6 @@ module People
     it "should parse first initial, last name" do
       name = @np.parse( "M ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 1
       name[:first].should == "M"
       name[:last].should == "Ericson"
     end
@@ -17,7 +16,6 @@ module People
     it "should parse first initial, middle initial, last name" do
       name = @np.parse( "M E ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 2
       name[:first].should == "M"
       name[:middle].should == 'E'
       name[:last].should == "Ericson"
@@ -26,7 +24,6 @@ module People
     it "should parse first initial with period, middle initial with period, last name" do
       name = @np.parse( "M.E. ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 3
       name[:first].should == "M"
       name[:middle].should == 'E'
       name[:last].should == "Ericson"
@@ -35,7 +32,6 @@ module People
     it "should parse first initial, two middle initials, last name" do
       name = @np.parse( "M E E  ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 4
       name[:first].should == "M"
       name[:middle].should == 'E E'
       name[:last].should == "Ericson"
@@ -44,7 +40,6 @@ module People
     it "should parse first initial, middle name, last name" do
       name = @np.parse( "M EDWARD ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 5
       name[:first].should == "M"
       name[:middle].should == 'Edward'
       name[:last].should == "Ericson"
@@ -53,7 +48,6 @@ module People
     it "should parse first name, middle initial, last name" do
       name = @np.parse( "MATTHEW E ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 6
       name[:first].should == "Matthew"
       name[:middle].should == 'E'
       name[:last].should == "Ericson"
@@ -62,7 +56,6 @@ module People
     it "should parse first name, two middle initials, last name" do
       name = @np.parse( "MATTHEW E E ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 7
       name[:first].should == "Matthew"
       name[:middle].should == 'E E'
       name[:last].should == "Ericson"
@@ -71,7 +64,6 @@ module People
     it "should parse first name, two middle initials with periods, last name" do
       name = @np.parse( "MATTHEW E.E. ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 8
       name[:first].should == "Matthew"
       name[:middle].should == 'E.E.'
       name[:last].should == "Ericson"
@@ -80,7 +72,6 @@ module People
     it "should parse first name, last name" do
       name = @np.parse( "MATTHEW ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 9
       name[:first].should == "Matthew"
       name[:last].should == "Ericson"
     end
@@ -88,7 +79,6 @@ module People
     it "should parse first name, middle name, last name" do
       name = @np.parse( "MATTHEW EDWARD ERICSON" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 10
       name[:first].should == "Matthew"
       name[:middle].should == 'Edward'
       name[:last].should == "Ericson"
@@ -98,7 +88,6 @@ module People
       skip( "Doesn't correctly parse two middle names" ) do
         name = @np.parse( "MATTHEW E. SHEIE ERICSON" )
         name[:parsed].should be_truthy
-        name[:parse_type].should == 11
         name[:first].should == "Matthew"
         name[:middle].should == 'E. Sheie'
         name[:last].should == "Ericson"
@@ -116,7 +105,6 @@ module People
       name[:parsed].should == true
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
-      name[:parse_type].should == 9
       name[:first2].should == "Jill"
     end
 
@@ -125,7 +113,6 @@ module People
       name[:parsed].should == true
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
-      name[:parse_type].should == 9
       name[:first2].should == "Jill"
       name[:middle2].should == 'S'
     end
@@ -135,7 +122,6 @@ module People
       name[:parsed].should == true
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
-      name[:parse_type].should == 6
       name[:first2].should == "Jill"
       name[:middle].should == 'S'
     end
@@ -149,14 +135,12 @@ module People
     it "should parse multiple-word last name" do
       name = @np.parse( "Matthew De La Hoya" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 9
       name[:last].should == "De La Hoya"
     end
 
     it "should parse last name with cammel case" do
       name = @np.parse( "Matthew McIntosh" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 9
       name[:last].should == "McIntosh"
     end
   end
@@ -190,30 +174,35 @@ module People
       name[:suffix].should == "M.D."
     end
 
+    it "parses name with two suffixes like Matthew E Ericson Jr M.D." do
+      name = @np.parse( "Matthew E Ericson Jr M.D." )
+      name[:parsed].should be_truthy
+      name[:suffix].should == "Jr M.D."
+    end
+
     it "should parse name with a title" do
       name = @np.parse( "Mr Matthew E Ericson" )
       name[:parsed].should be_truthy
-      name[:title].should == "Mr "
+      name[:title].should == "Mr"
     end
 
     it "should parse name with a title with a period" do
       name = @np.parse( "Mr. Matthew E Ericson" )
       name[:parsed].should be_truthy
-      name[:title].should == "Mr. "
+      name[:title].should == "Mr."
     end
 
     it "should parse name with a title, first initial" do
       name = @np.parse( "Rabbi M Edward Ericson" )
       name[:parsed].should be_truthy
-      name[:parse_type].should == 5
-      name[:title].should == "Rabbi "
+      name[:title].should == "Rabbi"
       name[:first].should == 'M'
     end
 
     it "should parse 1950s married couple name" do
       name = @np.parse( "Mr. and Mrs. Matthew E Ericson" )
       name[:parsed].should be_truthy
-      name[:title].should == "Mr. And Mrs. "
+      name[:title].should == "Mr. And Mrs."
       name[:first].should == "Matthew"
     end
   end
