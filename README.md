@@ -2,6 +2,10 @@
 
 Parses names into parts. Loosely based on the Lingua-EN-NameParser Perl module.
 
+## Requirements
+
+Requires Ruby 2.1 or higher (or equivalent). To use with 1.9 or 2.0 you'll need to install either string-scrub or scrub_rb.
+
 ## How to install
 
 Add to your application's Gemfile:
