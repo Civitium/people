@@ -2,9 +2,11 @@ module People
   # Class to parse names into their components like first, middle, last, etc.
   class NameParser
 
+    # Internal: Regex for matching name prefixes such as honorifics
     TITLES = %r!
       ^(
-        (?:Lt|Leut|Lieut)\.?
+        خانم                                                # Persian Mrs ?
+        | (?:Lt|Leut|Lieut)\.?
         | Air\sCommander
         | Air\sCommodore
         | Air\sMarshall
@@ -22,7 +24,7 @@ module People
         | Count(?:ess)?
         | Dame
         | Det\.?
-        |  Dhr\.?
+        | Dhr\.?
         | Doctor
         | Dr\.?
         | Father
@@ -34,15 +36,18 @@ module People
         | Gen(?:\.|eral)?
         | Herr
         | Hr\.?
+        | Hon\.?(?>ourable)?
         | Insp\.?
         | Judge
         | Justice
+        | Khaanom                                         # Persian Mrs
         | Lady
         | Lieutenant(?:\s(?:Commander|Colonel|General))?  # Lieutenant, Lieutenant Commander, Lieutenant Colonel, Lieutenant General
         | Lord
         | Lt\.?(?:\s(?:Cdr|Col|Gen)\.?)?                  # Lt, Lt Col, Lt Cdr, Lt Gen
         | M/s\.?
         | Madam(?:e)?
+        | Maid
         | Maj\.?(?:\sGen\.?)?                             # Maj, Maj Gen
         | Major(?:\sGeneral)?                             # Major, Major General
         | Mast(?:\.|er)?
@@ -79,11 +84,12 @@ module People
         | V\.?\ Revd?\.?
         | Very\ Rever[e|a]nd
       )
-    !xo;
+    !xo
     
+    # Internal: Regex to match suffixes or honorifics after names
     SUFFIXES  = %r!
       (
-         APC
+        APC
         | Attorney[\s\-]at[\s\-]Law\.?       # Attorney at Law, Attorney-at-Law
         | BS
         | C\.?P\.?A\.?
@@ -105,15 +111,82 @@ module People
         | Sn?r\.?(?>,?\sEsq)?\.?             # Snr, Sr, Snr Esq, Sr Esq
         | V\.?M\.?D\.?
       )
-    !xo;
+    !xo
 
-    attr_reader :seen, :parsed
+    # Internal: Regex last name prefixes - mostly which incorporate a space between it and the family name
+    # Ends in the space which should be between it. It's a partial regex compared to use.
+    LAST_NAME_PART = "(?i:" << %W!
+      't
+      Ab
+      Ap
+      Abu
+      Al
+      Bar
+      Bath?
+      Bet
+      Bint?
+      Da
+      De\sCa
+      De\sLa
+      De\sLos
+      de\sDe\sla
+      De
+      Degli
+      De[lnrs]
+      Dele
+      Dell[ae]
+      D[iu]
+      Dos
+      El
+      Fitz
+      Gil
+      Het
+      in
+      in\shet
+      Ibn
+      Kil
+      L[aeo]
+      M[ai\']?c?
+      Mhic
+      Maol
+      M[au]g
+      Naka
+      中
+      Neder
+      N[ií]'?[cgn]?
+      Nord
+      Norr
+      Ny
+      Ó
+      Øst
+      Öfver
+      Öst
+      Öster
+      Över
+      Öz
+      Pour
+      St\.?
+      San
+      Stor
+      Söder
+      Ter?
+      Tre
+      U[ií]?
+      Vd
+      Van\s't
+      V[ao]n
+      V[ao]n\sDe[nr]
+      Ved\.?
+      Vda\.?\sde\sDe\sla
+      Vest
+      Väst
+      Väster
+      Zu
+      Y
+    !.join('|') << ")\s"
 
     # Creates a name parsing object
     def initialize( opts={} )
-
-      @name_chars = "\\p{Alnum}\\-\\'"
-      @nc = @name_chars
 
       @opts = {
         :strip_mr   => true,
@@ -121,176 +194,114 @@ module People
         :case_mode  => 'proper',
         :couples    => false
       }.merge! opts
-
-      ## constants
-
-      @last_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc}-]+)))";
-      @mult_name_p = "((;.+)|(((Mc|Mac|Des|Dell[ae]|Del|De La|De Los|Da|Di|Du|La|Le|Lo|St\.|Den|Von|Van|Von Der|Van De[nr]) )?([#{@nc} ]+)))";
-      
-      @seen = 0
-      @parsed = 0;
-
     end
 
-    def parse( name )
+    def parse(str)
+      out = {}
 
-      @seen += 1
-
-      clean  = ''
-      out = Hash.new( "" )
-
-      out[:orig]  = name.dup
-
-      name = name.dup
-
-      name = clean( name )
+      out[:orig]  = str.dup
+      name = clean(str)
 
       # strip trailing suffices
-      temp_suffix = []
-      name.gsub!( /Mr\.? \& Mrs\.?/i, "Mr. and Mrs." )
+      name.gsub!( /Mr\.? & Mrs\.?/i, "Mr. and Mrs." )
 
       # Flip last and first if contain comma
       name.gsub!( /;/, "" )
-      name.gsub!( /(.+),(.+)/, "\\2 ;\\1" )
-
-
-      name.gsub!( /,/, "" )
-#      name << " " + temp_suffix.join(' ')
+      name.gsub!(/(.+),(.+)/, "\\2 ;\\1")
+      name.gsub!(/,/, "")
       name.strip!
+      
+      name.gsub!(/\sand\s/i, ' & ') if @opts[:couples]
 
-      if @opts[:couples]
-        name.gsub!( / +and +/i, " \& " )
-      end
+      # trying to correct something like "Mr and Mrs Frank Bogart"
+      if @opts[:couples] && name.match(/&/)
 
+        names = name.split(/&/)
+        name_one = names[0].strip! # presuming it doesn't have a full name
+        name_two = names[1].strip! # presuming it does have a full name
 
+        out[:title2] = get_title(name_two)
+        out[:suffix2] = get_suffix(name_two)
+        parts = get_name_parts(name_two)
+        out[:parsed2] = parts[:parsed]
+        out[:first2] = parts[:first]
+        out[:middle2] = parts[:middle]
+        out[:last] = parts[:last]
 
-      if @opts[:couples] && name.match( /\&/ )
+        # try first
+        out[:title] = get_title(name_one)
+        out[:suffix] = get_suffix(name_one)
+        name_one = "#{name_one} #{out[:last]}"
+        parts = get_name_parts(name_one, true)
+        out[:parsed] = parts[:parsed]
+        out[:first] = parts[:first]
+        out[:middle] = parts[:middle]
 
-        names = name.split( / *& */ )
-        a = names[0]
-        b = names[1]
-
-        out[:title2] = get_title( b );
-        out[:suffix2] = get_suffix( b );
-
-        b.strip!
-
-        parts = get_name_parts( b )
-
-        out[:parsed2] = parts[0]
-        out[:first2] = parts[1]
-        out[:middle2] = parts[2]
-        out[:last] = parts[3]
-
-        out[:title] = get_title( a );
-        out[:suffix] = get_suffix( a );
-
-        a.strip!
-        a += " "
-
-        parts = get_name_parts( a, true )
-
-        out[:parsed] = parts[0]
-        out[:first] = parts[1]
-        out[:middle] = parts[2]
-
-        if out[:parsed] && out[:parsed2]
-          out[:multiple] = true
-        else
-          out = Hash.new( "" )
-        end
-
-
+        out[:multiple] = true if out[:parsed] && out[:parsed2]
       else
-        out[:suffix] = ''
-
-        out[:title] = get_title( name );
-        out[:suffix] = get_suffix( name );
-        parts = get_name_parts( name )
-
-        out[:parsed] = parts[0]
-        out[:first] = parts[1]
-        out[:middle] = parts[2]
-        out[:last] = parts[3]
-
+        out[:title] = get_title(name)
+        out[:suffix] = get_suffix(name)
+        parts = get_name_parts(name)
+        out[:parsed] = parts[:parsed]
+        out[:first] = parts[:first]
+        out[:middle] = parts[:middle]
+        out[:last] = parts[:last]
       end
-
 
       if @opts[:case_mode] == 'proper'
         [ :title, :first, :middle, :last, :suffix, :clean, :first2, :middle2, :title2, :suffix2 ].each do |part|
-          next if part == :suffix && out[part].match( /^[iv]+$/i );
-          out[part] = proper( out[part] )
+          next if part == :suffix
+          out[part] = proper( out[part] ) unless out[part].nil?
         end
-
       elsif @opts[:case_mode] == 'upper'
         [ :title, :first, :middle, :last, :suffix, :clean, :first2, :middle2, :title2, :suffix2 ].each do |part|
-          out[part].upcase!
+          out[part].upcase! unless out[part].nil?
         end
-
-      else
-
-      end
-
-      if out[:parsed]
-        @parsed += 1
       end
 
       out[:clean] = name
-
       return {
-        :title       => "",
-        :first       => "",
-        :middle      => "",
-        :last        => "",
-        :suffix      => "",
-
-        :title2      => "",
-        :first2      => "",
-        :middle2     => "",
-        :suffix2     => "",
-
-        :clean       => "",
-
-        :parsed      => false,
-
-        :parsed2     => false,
-
-        :multiple    => false
-      }.merge( out )
+        :title => "",
+        :first => "",
+        :middle => "",
+        :last => "",
+        :suffix => "",
+        :title2 => "",
+        :first2 => "",
+        :middle2 => "",
+        :suffix2 => "",
+        :clean => "",
+        :parsed => false,
+        :parsed2 => false,
+        :multiple => false
+      }.merge(out)
 
     end
 
 
-    def clean( s )
-      s.scrub!
+    def clean(str)
+      str.scrub!
+      return '' if str.nil?
       # remove illegal characters
-      s.gsub!( /[^\p{Alnum}\-\'\.&\/ \,]/, "" )
-      # remove repeating spaces
-      s.gsub!( /  +/, " " )
-      s.gsub!( /\s+/, " " )
-      s.strip!
-      s
+      str.gsub!(/[^\p{Alpha}\-\'\.&\/ \,]/, "" )
+      str.gsub!(/\s+/, " ").strip!
+      str
     end
 
-    def get_title( name )
-
-      if m = TITLES.match(name)
+    def get_title(str)
+      title = ""
+      if m = TITLES.match(str)
         title = m[1].strip
-        name.sub!(title, "").strip!
-        return title
+        str.sub!(title, "").strip!
       end
-
-      return ""
+      return title
     end
 
     # get_suffix destroys the name parameter
-    def get_suffix( name )
+    def get_suffix(str)
       suffixes = []
-      suffixes = name.scan(SUFFIXES).flatten
-      suffixes.each do |s|
-        name.sub!(/\b#{s}/, "")
-        name.strip!
-      end
+      suffixes = str.scan(SUFFIXES).flatten
+      suffixes.each { |s| str.sub!(/\b#{s}/, "").strip! }
       suffixes.join " "
     end
 
@@ -300,113 +311,90 @@ module People
       middle = ""
       last   = ""
 
-      if no_last_name
-        last_name_p = ''
-        mult_name_p = ''
-      else
-        last_name_p = @last_name_p
-        mult_name_p = @mult_name_p
-      end
+      parsed = true
 
-      parsed = false
-
-      u1c = "\\p{Alpha}"
-
+      case name
       # M ERICSON
-      if name.match( /^([#{u1c}])\.? (#{last_name_p})$/i )
-        first  = $1;
-        middle = '';
-        last   = $2;
-        parsed = true
+      when /^(\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        last   = $2
 
-        # M E ERICSON
-      elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # M E ERICSON
+      when /^(\p{Alpha})\.? (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # M.E. ERICSON
-      elsif name.match( /^([#{u1c}])\.([#{u1c}])\. (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # M.E. ERICSON
+      when /^(\p{Alpha})\.(\p{Alpha})\. ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # M E E ERICSON
-      elsif name.match( /^([#{u1c}])\.? ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2 + ' ' + $3;
-        last   = $4;
-        parsed = true
+      # M E E ERICSON
+      when /^(\p{Alpha})\.? (\p{Alpha})\.? (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = "#{$2} #{$3}"
+        last   = $4
 
-        # M EDWARD ERICSON
-      elsif name.match( /^([#{u1c}])\.? ([#{@nc}]+) (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # M EDWARD ERICSON
+      when /^(\p{Alpha})\.? ([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # MATTHEW E ERICSON
-      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # MATTHEW E ERICSON
+      when /^([\p{Alpha}\-\']+) (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # MATTHEW E E ERICSON
-      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? ([#{u1c}])\.? (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2 + ' ' + $3;
-        last   = $4;
-        parsed = true
+      # MATTHEW E E ERICSON
+      when /^([\p{Alpha}\-\']+) (\p{Alpha})\.? (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = "#{$2} #{$3}"
+        last   = $4
 
-        # MATTHEW E.E. ERICSON
-      elsif name.match( /^([#{@nc}]+) ([#{u1c}]\.[#{u1c}]\.) (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # MATTHEW E.E. ERICSON
+      when /^([\p{Alpha}\-\']+) (\p{Alpha}\.\p{Alpha}\.) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # MATTHEW ERICSON
-      elsif name.match( /^([#{@nc}]+) (#{last_name_p})$/i )
-        first  = $1;
-        middle = '';
-        last   = $2;
-        parsed = true
+      # MATTHEW ERICSON
+      when /^([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        last   = $2
 
-        # MATTHEW EDWARD ERICSON
-      elsif name.match( /^([#{@nc}]+) ([#{@nc}]+) (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # MATTHEW EDWARD ERICSON
+      when /^([\p{Alpha}\-\']+) ([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # MATTHEW E. SHEIE ERICSON
-      elsif name.match( /^([#{@nc}]+) ([#{u1c}])\.? (#{mult_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      # MATTHEW E. SHEIE ERICSON
+      when /^([\p{Alpha}\-\']+) (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\'\ ]+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
 
-        # M.E.N. ERICSON
-      elsif name.match( /^(([#{u1c}]\.)+) (#{last_name_p})$/i )
-        first  = $1;
-        middle = ''
-        last   = $3;
-        parsed = true
+      # M.E.N. ERICSON
+      when /^((\p{Alpha}\.)+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        last   = $2
 
-      elsif name.match( /^([#{@nc}]+) ([#{@nc} .]+?) (#{last_name_p})$/i )
-        first  = $1;
-        middle = $2;
-        last   = $3;
-        parsed = true
+      when /^([\p{Alpha}\-\']+) ([\p{Alpha}\-\'\. ]+?) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = $2
+        last   = $3
+
+      else
+        parsed = false
       end
-
+      
       last.gsub!( /;/, "" )
 
-      return [ parsed, first, middle, last ];
-
+      return { :parsed => parsed, :first => first, :middle => middle, :last => last }
     end
 
 
@@ -438,7 +426,7 @@ module People
         fixed.gsub!( /MacKie/i,  'Mackie' )
 
         # Portuguese
-        fixed.gsub!( /MacHado/i,  'Machado' );
+        fixed.gsub!( /MacHado/i,  'Machado' )
 
         # Lithuanian
         fixed.gsub!( /MacEvicius/i, 'Macevicius' )

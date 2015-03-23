@@ -102,7 +102,7 @@ module People
 
     it "should parse multiple first names and last name" do
       name = @np.parse( "Joe and Jill Hill" )
-      name[:parsed].should == true
+      name[:parsed].should be_truthy
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
       name[:first2].should == "Jill"
@@ -110,7 +110,7 @@ module People
 
     it "should parse multiple first names, middle initial, last name" do
       name = @np.parse( "Joe and Jill S Hill" )
-      name[:parsed].should == true
+      name[:parsed].should be_truthy
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
       name[:first2].should == "Jill"
@@ -119,7 +119,7 @@ module People
 
     it "should parse multiple first names, middle initial, last name" do
       name = @np.parse( "Joe S and Jill Hill" )
-      name[:parsed].should == true
+      name[:parsed].should be_truthy
       name[:multiple].should be_truthy
       name[:parsed2].should be_truthy
       name[:first2].should == "Jill"
