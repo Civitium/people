@@ -1,3 +1,10 @@
+# 0.4.2 2015-03-25
+* match Dutch names (see: https://github.com/mericson/people/issues/2)
+* fix some matching with other complex last names
+* update specs to rpec 3
+* added triple dotted initials from @djudd
+
+
 # 0.4.1 2015-03-21
 * moved title and suffixes to constants
 * made title and suffixes regex's

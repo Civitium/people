@@ -313,9 +313,15 @@ module People
 
       parsed = true
 
+      # ordering is important :)
       case name
       # M ERICSON
       when /^(\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        last   = $2
+
+      # MATTHEW ERICSON
+      when /^([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
         first  = $1
         last   = $2
 
@@ -333,6 +339,12 @@ module People
 
       # M E E ERICSON
       when /^(\p{Alpha})\.? (\p{Alpha})\.? (\p{Alpha})\.? ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
+        first  = $1
+        middle = "#{$2} #{$3}"
+        last   = $4
+
+      # M.E.E. ERICSON
+      when /^(\p{Alpha})\.(\p{Alpha})\.(\p{Alpha})\. ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
         first  = $1
         middle = "#{$2} #{$3}"
         last   = $4
@@ -360,11 +372,6 @@ module People
         first  = $1
         middle = $2
         last   = $3
-
-      # MATTHEW ERICSON
-      when /^([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
-        first  = $1
-        last   = $2
 
       # MATTHEW EDWARD ERICSON
       when /^([\p{Alpha}\-\']+) ([\p{Alpha}\-\']+) ((?>#{LAST_NAME_PART})?[\p{Alpha}\-\']+)$/i
@@ -405,46 +412,47 @@ module People
 
       # Now uppercase first letter of every word. By checking on word boundaries,
       # we will account for apostrophes (D'Angelo) and hyphenated names
-      fixed.gsub!( /\b(\w+)/ ) { |m| m.match( /^[ixv]$+/i ) ? m.upcase :  m.capitalize }
+      fixed.gsub!( /\b(\p{Alpha}+)/ ) { |m| m.match( /^[ixv]$+/i ) ? m.upcase :  m.capitalize }
 
       # Name case Macs and Mcs
       # Exclude names with 1-2 letters after prefix like Mack, Macky, Mace
       # Exclude names ending in a,c,i,o,z or j, typically Polish or Italian
 
-      if fixed.match( /\bMac[\p{Lower}]{2,}[^a|c|i|o|z|j]\b/i  )
+      if fixed.match( /\bMac[\p{Lower}]{2,}[^aciozj]\b/i  )
 
         fixed.gsub!( /\b(Mac)([\p{Lower}]+)/i ) do |m|
           $1 + $2.capitalize
         end
 
         # Now correct for "Mac" exceptions
-        fixed.gsub!( /MacHin/i,  'Machin' )
+        fixed.gsub!( /MacHin/i, 'Machin' )
         fixed.gsub!( /MacHlin/i, 'Machlin' )
-        fixed.gsub!( /MacHar/i,  'Machar' )
-        fixed.gsub!( /MacKle/i,  'Mackle' )
+        fixed.gsub!( /MacHar/i, 'Machar' )
+        fixed.gsub!( /MacKle/i, 'Mackle' )
         fixed.gsub!( /MacKlin/i, 'Macklin' )
-        fixed.gsub!( /MacKie/i,  'Mackie' )
+        fixed.gsub!( /MacKie/i, 'Mackie' )
 
         # Portuguese
-        fixed.gsub!( /MacHado/i,  'Machado' )
+        fixed.gsub!( /MacHado/i, 'Machado' )
 
         # Lithuanian
         fixed.gsub!( /MacEvicius/i, 'Macevicius' )
-        fixed.gsub!( /MacIulis/i,   'Maciulis' )
-        fixed.gsub!( /MacIas/i,     'Macias' )
+        fixed.gsub!( /MacIulis/i, 'Maciulis' )
+        fixed.gsub!( /MacIas/i, 'Macias' )
 
       elsif fixed.match( /\bMc/i )
         fixed.gsub!( /\b(Mc)([\p{Lower}]+)/i ) do |m|
           $1 + $2.capitalize
         end
-
       end
+
+      # fix apostrophe Dutch names like "'t Hoft"
+      fixed.gsub!( /\'(\p{Upper})\s/) { |m| m.downcase }
 
       # Exceptions (only 'Mac' name ending in 'o' ?)
       fixed.gsub!( /Macmurdo/i, 'MacMurdo' )
 
-      return fixed
-
+      fixed
     end
 
   end

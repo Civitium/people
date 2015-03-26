@@ -26,8 +26,8 @@ Gem::Specification.new do |s|
   s.test_files    = s.files.grep(%r{^(test|spec|features)/})
 
   s.add_development_dependency "bundler", "~> 1.5"
-  s.add_development_dependency "rspec", "~> 3.2"
-  s.add_development_dependency "rake"
+  s.add_development_dependency "rspec", "~> 3.0"
+  s.add_development_dependency "rake", "~> 10.0"
 
 end
 
