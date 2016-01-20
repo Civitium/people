@@ -85,7 +85,7 @@ module People
         | Very\ Rever[e|a]nd
       )
     !xo
-    
+
     # Internal: Regex to match suffixes or honorifics after names
     SUFFIXES  = %r!
       (
@@ -100,6 +100,7 @@ module People
         | FAC(?>P|S)                         # FACP, FACS
         | \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
         | I{1,3},?\sEsq\.?
+        | J\.?D\.?
         | Jn?r\.?
         | Jn?r\.?,?\sEsq\.?
         | M\.?[BDS]\.?                       # MB, MD, MS
@@ -111,7 +112,7 @@ module People
         | Sn?r\.?(?>,?\sEsq)?\.?             # Snr, Sr, Snr Esq, Sr Esq
         | V\.?M\.?D\.?
       )
-    !xo
+    !xoi
 
     # Internal: Regex last name prefixes - mostly which incorporate a space between it and the family name
     # Ends in the space which should be between it. It's a partial regex compared to use.
@@ -210,7 +211,7 @@ module People
       name.gsub!(/(.+),(.+)/, "\\2 ;\\1")
       name.gsub!(/,/, "")
       name.strip!
-      
+
       name.gsub!(/\sand\s/i, ' & ') if @opts[:couples]
 
       # trying to correct something like "Mr and Mrs Frank Bogart"
@@ -302,11 +303,12 @@ module People
       suffixes = []
       suffixes = str.scan(SUFFIXES).flatten
       suffixes.each { |s| str.sub!(/\b#{s}/, "").strip! }
+      str.sub!(/^;/, '') # removing ; at the beginning if it's the only thing at the beginning
       suffixes.join " "
     end
 
     def get_name_parts( name, no_last_name = false )
-
+      # p name
       first  = ""
       middle = ""
       last   = ""
@@ -398,7 +400,7 @@ module People
       else
         parsed = false
       end
-      
+
       last.gsub!( /;/, "" )
 
       return { :parsed => parsed, :first => first, :middle => middle, :last => last }

@@ -55,5 +55,11 @@ describe People do
       expect(name[:title]).to eq "Mr. And Mrs."
       expect(name[:first]).to eq "Matthew"
     end
+
+    it "parses multiple suffixes with no period - JD, PhD" do
+      name = @np.parse('Eric E. Silverman JD, PhD')
+      expect(name[:first]).to eq "Eric"
+      expect(name[:suffix]).to eq "PhD JD"
+    end
   end
 end
