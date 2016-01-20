@@ -19,7 +19,7 @@ describe People do
     end
 
     it "parses suffix with periods - M.D." do
-      name = @np.parse( "Matthew E Ericson M.D." )
+      p name = @np.parse( "Matthew E Ericson M.D." )
       expect(name[:parsed]).to be_truthy
       expect(name[:suffix]).to eq "M.D."
     end

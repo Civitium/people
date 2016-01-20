@@ -88,12 +88,13 @@ module People
 
     # Internal: Regex to match suffixes or honorifics after names
     SUFFIXES  = %r!
-      (
+      \b(
         APC
         | Attorney[\s\-]at[\s\-]Law\.?       # Attorney at Law, Attorney-at-Law
         | BS
         | C\.?P\.?A\.?
         | CHB
+        | D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
         | DSC
         | Esq(?>\.|uire\.?)?                 # Esq, Esquire
         | FAC(?>P|S)                         # FACP, FACS
@@ -114,8 +115,8 @@ module People
 
     CASE_SENSITIVE_SUFFIXES = %r!
       (
-        D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
-        | \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
+        \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
+        | \b(?:x{0,3}i{0,3}(?:x|v)?i{0,3})[ixv]{1,}\.?\Z
       )
     !xo
 
@@ -310,7 +311,7 @@ module People
       suffixes = str.scan(SUFFIXES).flatten + str.scan(CASE_SENSITIVE_SUFFIXES).flatten
       suffixes.each { |s| str.sub!(/\b#{s}/, '').strip! }
       str.sub!(/^;/, '') # removing ; at the beginning if it's the only thing at the beginning
-      suffixes.join " "
+      suffixes.join ' '
     end
 
     def get_name_parts( name, no_last_name = false )
