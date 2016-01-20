@@ -87,11 +87,12 @@ module People
     !xo
 
     # Internal: Regex to match suffixes or honorifics after names
-    SUFFIXES  = %r!
+    SUFFIXES  = %r{
       \b(
         APC
         | Attorney[\s\-]at[\s\-]Law\.?       # Attorney at Law, Attorney-at-Law
         | BS
+        | CAAM
         | C\.?P\.?A\.?
         | CHB
         | D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
@@ -102,16 +103,21 @@ module People
         | J\.?D\.?
         | Jn?r\.?
         | Jn?r\.?,?\sEsq\.?
+        | LL\.M\.?
+        | M\.?B\.?A\.?
+        | MCP
         | M\.?[BDS]\.?                       # MB, MD, MS
-        | MPH
+        | MPH\.?
+        | MSc
         | P\.?\s?A\.?
         | PC
         | Ph\.?\s?d\.?
         | SC
+        | Sc\.?D.\?
         | Sn?r\.?(?>,?\sEsq)?\.?             # Snr, Sr, Snr Esq, Sr Esq
         | V\.?M\.?D\.?
-      )
-    !xoi
+      )(?!\S)
+    }xoi
 
     CASE_SENSITIVE_SUFFIXES = %r!
       (
@@ -308,14 +314,14 @@ module People
     # get_suffix destroys the name parameter
     def get_suffix(str)
       suffixes = []
-      suffixes = str.scan(SUFFIXES).flatten + str.scan(CASE_SENSITIVE_SUFFIXES).flatten
+      suffixes = str.scan(SUFFIXES).flatten.delete_if { |s| s == '' || s.nil? }
+      suffixes += str.scan(CASE_SENSITIVE_SUFFIXES).flatten
       suffixes.each { |s| str.sub!(/\b#{s}/, '').strip! }
       str.sub!(/^;/, '') # removing ; at the beginning if it's the only thing at the beginning
       suffixes.join ' '
     end
 
     def get_name_parts( name, no_last_name = false )
-      # p name
       first  = ""
       middle = ""
       last   = ""
