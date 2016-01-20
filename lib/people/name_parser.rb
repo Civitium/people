@@ -94,11 +94,9 @@ module People
         | BS
         | C\.?P\.?A\.?
         | CHB
-        | D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
         | DSC
         | Esq(?>\.|uire\.?)?                 # Esq, Esquire
         | FAC(?>P|S)                         # FACP, FACS
-        | \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
         | I{1,3},?\sEsq\.?
         | J\.?D\.?
         | Jn?r\.?
@@ -113,6 +111,13 @@ module People
         | V\.?M\.?D\.?
       )
     !xoi
+
+    CASE_SENSITIVE_SUFFIXES = %r!
+      (
+        D\.?[DMOPV]\.?[SM]?\.?             # DMD, DO, DPM, DDM, DVM
+        | \b(?:X{0,3}I{0,3}(?:X|V)?I{0,3})[IXV]{1,}\.?\Z   # roman numbers I - XXXXVIII, if they're written proper
+      )
+    !xo
 
     # Internal: Regex last name prefixes - mostly which incorporate a space between it and the family name
     # Ends in the space which should be between it. It's a partial regex compared to use.
@@ -302,8 +307,8 @@ module People
     # get_suffix destroys the name parameter
     def get_suffix(str)
       suffixes = []
-      suffixes = str.scan(SUFFIXES).flatten
-      suffixes.each { |s| str.sub!(/\b#{s}/, "").strip! }
+      suffixes = str.scan(SUFFIXES).flatten + str.scan(CASE_SENSITIVE_SUFFIXES).flatten
+      suffixes.each { |s| str.sub!(/\b#{s}/, '').strip! }
       str.sub!(/^;/, '') # removing ; at the beginning if it's the only thing at the beginning
       suffixes.join " "
     end
