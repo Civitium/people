@@ -284,8 +284,9 @@ module People
       str.scrub!
       return '' if str.nil?
       # remove illegal characters
-      str.gsub!(/[^\p{Alpha}\-\'\.&\/ \,]/, "" )
-      str.gsub!(/\s+/, " ").strip!
+      str.gsub!(/[^\p{Alpha}\-\'\.&\/ \,]/, '')
+      str = str.gsub(/\s+/, ' ') # gsub! does not work here for certain names
+      str.strip!
       str
     end
 
